@@ -1,0 +1,19 @@
+{
+    "name": "shoaibali/silverstripe-surveymonkey-v3-api",
+    "type": "silverstripe-module",
+    "description": "SilverStripe SurveyMonkey V3 API",
+    "homepage": "http://github.com/shoaibali/silverstripe-surveymonkey-v3-api",
+    "authors": [
+        {
+            "name": "Shoaib Ali",
+            "email": "shoaib@webstrike.co.nz"
+        }
+    ],
+    "license": "GPL-3.0",
+    "require": {
+        "php": ">=5.5",
+        "silverstripe/framework": "~3.2",
+        "silverstripe/cms": "~3.2",
+        "ghassani/surveymonkey-v3-api-php": "dev-master#f8e89275c5bc8ea147672d57dec25f8a947cbff5"
+    }
+}

@@ -1,0 +1,6 @@
+---
+Name: surveymonkeyconfig
+---
+SiteConfig:
+  extensions:
+    - SurveyMonkeyConfig
