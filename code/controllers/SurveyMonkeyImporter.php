@@ -1,5 +1,8 @@
 <?php
 
+use Spliced\SurveyMonkey\Client;
+
+
 class SurveyMonkeyImporter extends Page_Controller {
 	static $allowed_actions = array(
 		'Form',
@@ -47,7 +50,29 @@ HTML;
 
 		 }
 
-		 echo "work in progress"; die();
+		 $config = SiteConfig::current_site_config();
+
+		 $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
+		 $surveysResponse = $client->getSurveys();
+
+		 // header('Content-Type: application/json');
+
+		 echo "Survey ID => ";
+		 print_r(array_pop($surveysResponse->getData()['data'])['id']);
+
+		 echo "<br/>";
+
+		 echo "Title => "; 
+		 print_r(array_pop($surveysResponse->getData()['data'])['title']);
+		 // print_r($surveysResponse->getData()['data']['title']);
+
+		 echo "Survey Responses => ";
+		 $answers = $client->getSurveyResponses(array_pop($surveysResponse->getData()['data'])['id']);
+
+		 echo "<br/>";
+		 print_r($answers->getData());
+
+		 die();
 	}
 
 	function complete() {
