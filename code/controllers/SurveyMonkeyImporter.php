@@ -57,8 +57,11 @@ HTML;
 
 		 // header('Content-Type: application/json');
 
+		 $surveyID = array_pop($surveysResponse->getData()['data'])['id'];
+
+
 		 echo "Survey ID => ";
-		 print_r(array_pop($surveysResponse->getData()['data'])['id']);
+		 print_r($surveyID);
 
 		 echo "<br/>";
 
@@ -66,11 +69,46 @@ HTML;
 		 print_r(array_pop($surveysResponse->getData()['data'])['title']);
 		 // print_r($surveysResponse->getData()['data']['title']);
 
+		 echo "<br/>";
+
 		 echo "Survey Responses => ";
 		 $answers = $client->getSurveyResponses(array_pop($surveysResponse->getData()['data'])['id']);
 
 		 echo "<br/>";
-		 print_r($answers->getData());
+
+		 foreach($answers->getData()['data'] as $a) 
+		 {
+		 	echo $a['id'] . "<br/>";
+
+		 	// $clien->
+		 }
+
+		 echo "<br/>";
+
+		 echo "Collector Responses => <br/>";
+
+		 $collectors = $client->getCollectorsForSurvey($surveyID);
+
+		 foreach($collectors->getData()['data'] as $c)
+		 {
+
+		 	if (is_array($c)) {
+
+		 		$cresponses = $client->getCollectorResponses($c['id'], true);
+
+		 		foreach($cresponses->getData()['data'] as $k => $v) {
+		 			// var_dump($v['pages'][0]['questions']);
+		 			foreach($v['pages'][0]['questions'] as $ck => $cv) {
+		 				// var_dump($cv);
+		 				echo "Choice ID: " . $cv['answers'][0]['choice_id'] . "<br/>";
+		 			}
+		 		}
+		 	}
+
+		 	// collector ids
+		 	// echo $c['data']['id'] . "<br/>";
+		 }
+
 
 		 die();
 	}
