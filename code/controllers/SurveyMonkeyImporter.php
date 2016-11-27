@@ -67,9 +67,31 @@ HTML;
 
 		 echo "Title => "; 
 		 print_r(array_pop($surveysResponse->getData()['data'])['title']);
-		 // print_r($surveysResponse->getData()['data']['title']);
 
 		 echo "<br/>";
+
+		 echo "Questions => <br/>";
+
+		 foreach($client->getSurveyPages($surveyID)->getData()['data'] as $pk) {
+
+		 	foreach($client->getSurveyPageQuestions($surveyID, $pk['id'])->getData()['data'] as $questions){
+		 		echo  $questions['id'] . "=> " . $questions['heading'] . "<br/>";
+
+		 		foreach ($client->getSurveyPageQuestion($surveyID, $pk['id'], $questions['id'])->getData() as $q) {
+		 			if (is_array($q)) {
+		 				if (array_key_exists('choices', $q)) {
+		 					foreach($q['choices'] as $c){
+			 					echo $c['id'] . "-->" . $c['text'] . "<br/>";
+		 					}
+		 				}
+		 			}
+		 		}
+		 	}
+
+		 }
+
+		 echo "<br/>";
+
 
 		 echo "Survey Responses => ";
 		 $answers = $client->getSurveyResponses(array_pop($surveysResponse->getData()['data'])['id']);
