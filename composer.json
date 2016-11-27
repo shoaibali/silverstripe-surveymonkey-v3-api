@@ -14,6 +14,6 @@
         "php": ">=5.5",
         "silverstripe/framework": "~3.2",
         "silverstripe/cms": "~3.2",
-        "ghassani/surveymonkey-v3-api-php": "dev-master#f8e89275c5bc8ea147672d57dec25f8a947cbff5"
+        "ghassani/surveymonkey-v3-api-php": "dev-master"
     }
 }
