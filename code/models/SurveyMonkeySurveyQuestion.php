@@ -6,7 +6,7 @@ class SurveyMonkeySurveyQuestion extends DataObject {
 	static $api_access = false;
 
     private static $db = array(
-        'QuestionID' => 'Int',
+        'QuestionID' => 'Varchar',
         'Title' => 'Varchar(255)',
         'Position' => 'Int'
     );

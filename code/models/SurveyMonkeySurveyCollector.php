@@ -6,10 +6,12 @@ class SurveyMonkeySurveyCollector extends DataObject {
 	static $api_access = false;
 
     private static $db = array(
-        'CollectorID' => 'Int',
+        'CollectorID' => 'Varchar',
         'Name' => 'Varchar(255)',
         'Type' => 'Varchar(255)',
-        'SurveyID' => 'Int',
+        'SurveyID' => 'Varchar',
+        'ResponseCount' => 'Int',
+        'Status' => 'Varchar'
     );
 
 	private static $field_labels = array(

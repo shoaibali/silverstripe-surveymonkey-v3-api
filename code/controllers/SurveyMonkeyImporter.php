@@ -37,10 +37,19 @@ HTML;
 		$fields = new FieldList();
 
 		foreach($this->getSurveys() as $s) {
-			$f = new CheckboxField("SurveyID-". $s->ID, $s->Title);
+			$title = "<strong>". $s->Title  . "</strong>";
+			$info =  " [<strong>Created</strong>: " . $s->DateCreated . "]" 
+						. " [<strong>Responses</strong>: " . $s->ResponseCount . "]"
+						. " [<strong>Questions</strong>: " . $s->QuestionsCount . "]"
+						. " [<strong>Modified</strong>: " . $s->DateModified . "] <br/><br/>";
+
+			$f = new CheckboxField("SurveyID-". $s->ID, $title);
+			$lf = new LiteralField("SurveyInfo", $info);
+
 			$f->setValue(TRUE);
 
 			$fields->push($f);
+			$fields->push($lf);
 		}
 
 
@@ -58,7 +67,7 @@ HTML;
 
 		 $surveyIDs = self::getSelectedSurveyIDS($data);
 
-		 self::deleteAllSurveysData($data);
+		 $deleteExisting = self::deleteAllSurveysData($data);
 
 		 $config = SiteConfig::current_site_config();
 
@@ -68,7 +77,7 @@ HTML;
 		 {
 		 	$existingSurvey = SurveyMonkeySurvey::get()->filter(array('SurveyID' => $si))->First();
 
-		 	if (!$existingSurvey) {
+		 	if (!$existingSurvey || $deleteExisting ) {
 
 		 		// TODO could also get Pages here with second parameter to getSurvey
 		 		$surveyResponse 	= $client->getSurvey($si)->getData();
@@ -106,11 +115,13 @@ HTML;
 					 					// echo "ROW:" . $r['id'] . "-->" . $r['text'] . "<br/>";
 										$choice = new SurveyMonkeySurveyChoice();
 										$choice->ChoiceID 	= $r['id'];
+										$choice->SurveyID 	= $si;
 										$choice->Position 	= $r['position'];
 										$choice->Text 		= $r['text'];
 										$choice->Visible	= (bool) $r['visible'];
 										$choice->SurveyMonkeySurveyQuestionID = $question->ID;
 										$choice->write();
+
 				 					}
 				 				}
 
@@ -120,6 +131,7 @@ HTML;
 					 					// echo "CHOICE:" . $c['id'] . "-->" . $c['text'] . "<br/>";
 										$choice = new SurveyMonkeySurveyChoice();
 										$choice->ChoiceID 	= $c['id'];
+										$choice->SurveyID 	= $si;
 										$choice->Position 	= $c['position'];
 										$choice->Text 		= $c['text'];
 										$choice->Visible	= (bool) $c['visible'];
@@ -133,6 +145,7 @@ HTML;
 					 				// echo "OTHER: " . $q['other']['id'] . "-->" . $q['other']['text'] . "<br/>";
 									$choice = new SurveyMonkeySurveyChoice();
 									$choice->ChoiceID 	= $q['other']['id'];
+									$choice->SurveyID 	= $si;
 									$choice->Text 		= $q['other']['text'];
 									$choice->SurveyMonkeySurveyQuestionID = $question->ID;
 									$choice->write();
@@ -148,10 +161,14 @@ HTML;
 		 		/* IMPORT ANSWERS */
 		 		foreach($collectors as $c) {
 
+		 			$coll = $client->getCollector($c['id'])->getData();
+
 		 			$collector = new SurveyMonkeySurveyCollector();
-		 			$collector->ColletorID = $c['id'];
+		 			$collector->CollectorID = $c['id'];
 		 			$collector->Name = $c['name'];
-		 			$collector->Type = $c['type'];
+		 			$collector->Type = $coll['type'];
+		 			$collector->ResponseCount = $coll['response_count'];
+		 			$collector->Status = $coll['status'];
 		 			$collector->SurveyMonkeySurveyID = $survey->ID;
 		 			$collector->SurveyID = $si;
 		 			$collector->write();
@@ -169,23 +186,59 @@ HTML;
 								foreach($cv['answers'] as $answer) {
 
 									$sanswer = new SurveyMonkeySurveyAnswer();
-							 		$survey->SurveyID = $si;
+							 		$sanswer->SurveyID = $si;
 
 					 				// we are dealing with a row
 					 				if (array_key_exists('row_id', $answer)) {
-					 					$sanswer->ChoiceID = $answer['choice_id'];
+					 					// $sanswer->ChoiceID = $answer['choice_id'];
 					 					$sanswer->RowID = $answer['row_id'];
-					 				} else {
-					 					$sanswer->ChoiceID = $answer['choice_id'];
+
+					 					$choice = SurveyMonkeySurveyChoice::get()
+					 						->filter(array(
+					 							'ChoiceID' => $answer['row_id'],
+					 							'SurveyID' => $si
+					 						))->First();
+
+						 				$sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+						 				$sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+								 		$sanswer->write();
+
+
 					 				}
 
-					 				$choice = SurveyMonkeySurveyChoice::get()
-					 					->filter(array('ChoiceID' => $answer['choice_id']))
-					 					->First();
+					 				if (array_key_exists('other_id', $answer)) {
 
-					 				$sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
-					 				$sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
-							 		$sanswer->write();
+					 					$sanswer->ChoiceID = $answer['other_id'];
+
+					 					$choice = SurveyMonkeySurveyChoice::get()
+					 						->filter(array(
+					 							'ChoiceID' => $answer['other_id'],
+												'SurveyID' => $si
+					 						))->First();
+
+					 					$sanswer->Text = $answer['text'];
+						 				$sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+						 				$sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+								 		$sanswer->write();
+
+					 				}
+
+					 				if (array_key_exists('choice_id', $answer)) {
+
+					 					$sanswer->ChoiceID = $answer['choice_id'];
+					 					$choice = SurveyMonkeySurveyChoice::get()
+					 						->filter(array(
+					 							'ChoiceID' => $answer['choice_id'],
+					 							'SurveyID' => $si
+					 						))->First();
+
+
+
+						 				$sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+						 				$sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+								 		$sanswer->write();
+
+					 				}
 
 								}
 							}
@@ -360,11 +413,19 @@ HTML;
 		$client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
 		$surveysResponse = $client->getSurveys()->getData();
 
+		// var_dump($surveysResponse); die();
+
 		foreach($surveysResponse['data'] as $r) {
+
+			$survey = $client->getSurvey($r['id'])->getData();
 
 			$surveys->push(Array(
 							"Title" => $r['title'],
-							"ID" => $r['id']
+							"ID" => $r['id'],
+							"DateCreated" => $survey['date_created'],
+							"DateModified" => $survey['date_modified'],
+							"QuestionsCount" => $survey['question_count'],
+							"ResponseCount" => $survey['response_count'],
 			));
 		}
 
@@ -385,6 +446,8 @@ HTML;
 	}
 
 	protected function deleteAllSurveysData($data) {
+
+		$delete = false;
 
 		if(isset($data['DeleteExisting']) && $data['DeleteExisting']) {
 			$surveys = SurveyMonkeySurvey::get();
@@ -411,8 +474,12 @@ HTML;
 
 			foreach($collectors as $col){
 				$col->delete();
-			}						
+			}
+
+			$delete = true;						
 		}
+
+		return $delete;
 	}
 
 

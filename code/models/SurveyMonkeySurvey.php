@@ -6,7 +6,7 @@ class SurveyMonkeySurvey extends DataObject implements PermissionProvider  {
 	static $api_access = false;
 
     private static $db = array(
-        'SurveyID' => 'Int',
+        'SurveyID' => 'Varchar',
         'Title' => 'Varchar(255)',
         'ResponsesCount' => 'Int',
         'QuestionCount' => 'Int',
@@ -37,11 +37,11 @@ class SurveyMonkeySurvey extends DataObject implements PermissionProvider  {
 		return Permission::check('SURVEY_EDIT');
 	}
 
-	function canDelete() {
+	function canDelete($member = false) {
 		return Permission::check('SURVEY_DELETE');
 	}
 
-	function canCreate() {
+	function canCreate($member = false) {
 		return Permission::check('SURVEY_CREATE');
 	}
 

@@ -6,7 +6,8 @@ class SurveyMonkeySurveyChoice extends DataObject {
 	static $api_access = false;
 
     private static $db = array(
-        'ChoiceID' => 'Int',
+        'ChoiceID' => 'Varchar',
+        'SurveyID' => 'Varchar',
         'Position' => 'Int',
         'Text' => 'Varchar(255)',
         'Visible' => 'Boolean'
@@ -23,6 +24,9 @@ class SurveyMonkeySurveyChoice extends DataObject {
 	
 	private static $has_one = array(
 		'SurveyMonkeySurveyQuestion' => 'SurveyMonkeySurveyQuestion',
-		'SurveyMonkeySurveyAnswer' => 'SurveyMonkeySurveyAnswer'
 	);
+
+	public function getTitle(){
+		return $this->Text;
+	}
 }
