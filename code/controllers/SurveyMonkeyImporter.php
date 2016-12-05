@@ -36,28 +36,33 @@ HTML;
 
 		$fields = new FieldList();
 
-		foreach($this->getSurveys() as $s) {
-			$title = "<strong>". $s->Title  . "</strong>";
-			$info =  " [<strong>Created</strong>: " . $s->DateCreated . "]" 
-						. " [<strong>Responses</strong>: " . $s->ResponseCount . "]"
-						. " [<strong>Questions</strong>: " . $s->QuestionsCount . "]"
-						. " [<strong>Modified</strong>: " . $s->DateModified . "] <br/><br/>";
+		if (!array_key_exists("error", $surveys = $this->getSurveys())) {
+			foreach($this->getSurveys() as $s) {
+				$title = "<strong>". $s->Title  . "</strong>";
+				$info =  " [<strong>Created</strong>: " . $s->DateCreated . "]" 
+							. " [<strong>Responses</strong>: " . $s->ResponseCount . "]"
+							. " [<strong>Questions</strong>: " . $s->QuestionsCount . "]"
+							. " [<strong>Modified</strong>: " . $s->DateModified . "] <br/><br/>";
 
-			$f = new CheckboxField("SurveyID-". $s->ID, $title);
-			$lf = new LiteralField("SurveyInfo", $info);
+				$f = new CheckboxField("SurveyID-". $s->ID, $title);
+				$lf = new LiteralField("SurveyInfo", $info);
 
-			$f->setValue(TRUE);
+				$f->setValue(TRUE);
 
-			$fields->push($f);
+				$fields->push($f);
+				$fields->push($lf);
+			}
+		} else {
+			$lf = new LiteralField("Error", "<br/><br/><strong>" . $surveys['error'] . " : " . $surveys['name'] . "</strong>");
 			$fields->push($lf);
 		}
-
 
 		$deleteExistingCheckBox = new CheckboxField("DeleteExisting", "Clear out all existing surveys?");
 		$deleteExistingCheckBox->setValue(TRUE);
 
 		$fields->push($deleteExistingCheckBox);
 
+		//TODO No point in showing submit button if there are no surveys to import or errors
 		return new Form($this, "Form", $fields, new FieldList(
 			new FormAction("import", "Begin Import")
 		));
@@ -74,7 +79,7 @@ HTML;
 		 $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
 
 		 foreach($surveyIDs as $si)
-		 {
+		 { 
 		 	$existingSurvey = SurveyMonkeySurvey::get()->filter(array('SurveyID' => $si))->First();
 
 		 	if (!$existingSurvey || $deleteExisting ) {
@@ -413,23 +418,27 @@ HTML;
 		$client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
 		$surveysResponse = $client->getSurveys()->getData();
 
-		// var_dump($surveysResponse); die();
+		if (!array_key_exists("error", $surveysResponse)) {
+			foreach($surveysResponse['data'] as $r) {
 
-		foreach($surveysResponse['data'] as $r) {
+				$survey = $client->getSurvey($r['id'])->getData();
 
-			$survey = $client->getSurvey($r['id'])->getData();
+				$surveys->push(Array(
+								"Title" => $r['title'],
+								"ID" => $r['id'],
+								"DateCreated" => $survey['date_created'],
+								"DateModified" => $survey['date_modified'],
+								"QuestionsCount" => $survey['question_count'],
+								"ResponseCount" => $survey['response_count'],
+				));
+			}
+			return $surveys;
+		} 
 
-			$surveys->push(Array(
-							"Title" => $r['title'],
-							"ID" => $r['id'],
-							"DateCreated" => $survey['date_created'],
-							"DateModified" => $survey['date_modified'],
-							"QuestionsCount" => $survey['question_count'],
-							"ResponseCount" => $survey['response_count'],
-			));
-		}
-
-		return $surveys;
+		return array(
+			'error' => $surveysResponse['error']['message'], 
+			'name' => $surveysResponse['error']['name']
+		);
 	}
 
 
