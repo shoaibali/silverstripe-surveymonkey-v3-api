@@ -192,6 +192,7 @@ HTML;
 
 									$sanswer = new SurveyMonkeySurveyAnswer();
 							 		$sanswer->SurveyID = $si;
+							 		$sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
 
 					 				// we are dealing with a row
 					 				if (array_key_exists('row_id', $answer)) {

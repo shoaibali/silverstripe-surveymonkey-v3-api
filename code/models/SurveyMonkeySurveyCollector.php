@@ -24,7 +24,6 @@ class SurveyMonkeySurveyCollector extends DataObject {
 	);
 
     private static $has_many = array(
-        'SurveyMonkeySurveyChoices' => 'SurveyMonkeySurveyChoice',
         'SurveyMonkeySurveyAnswers' => 'SurveyMonkeySurveyAnswer'
     );
 
