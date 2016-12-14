@@ -23,7 +23,11 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		'ChoiceID',
 		'RowID',
 		'Text',
-		'SurveyMonkeySurveyChoice.Text'
+		'SurveyMonkeySurveyChoice.Text',
+		'getSurveyMonkeySurveyChoice',
+		'getSurveyMonkeySurveyQuestion.QuestionID',
+		'getSurveyMonkeySurveyQuestion.Title',
+
 	);
 	
 	private static $belongs_to = array(
@@ -38,8 +42,23 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 
 	public function getSurveyMonkeySurveyChoice()
 	{
-		return $this->SurveyMonkeySurveyChoice()->Text;
+
+		// TODO I should be able to just get this using the relationship
+		if(!is_null($this->RowID)) {
+			$choice = SurveyMonkeySurveyChoice::get()->filter(array("ChoiceID" => $this->RowID));
+			return $choice->First()->Text;
+		}
+
+		return "";
 	}
+
+
+	public function getSurveyMonkeySurveyQuestion()
+	{
+		$question =  $this->SurveyMonkeySurveyChoice()->SurveyMonkeySurveyQuestion();
+		return $question;
+	}
+
 
 
 }

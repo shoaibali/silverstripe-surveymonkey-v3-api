@@ -8,15 +8,24 @@ class SurveyMonkeySurveyQuestion extends DataObject {
     private static $db = array(
         'QuestionID' => 'Varchar',
         'Title' => 'Varchar(255)',
-        'Position' => 'Int'
+        'Position' => 'Int',
+        'PageID' => 'Varchar(255)',
+        'PageTitle' => 'Varchar(255)',
+        'PageDescription' => 'Text',
+        'PagePosition' => 'Int',
     );
 
 	private static $field_labels = array(
-		'Title' => 'Questions'
+		'Title' 		=> 'Questions',
+		'PagePosition' 	=> 'Page position',
+		'PageTitle' 	=> 'Page title',
 	);
 
 	private static $summary_fields = array(
 		'QuestionID',
+		'PagePosition',
+		'PageID',
+		'PageTitle',
 		'Title'
 	);
 
