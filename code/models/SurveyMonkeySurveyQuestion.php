@@ -24,6 +24,7 @@ class SurveyMonkeySurveyQuestion extends DataObject {
 	private static $summary_fields = array(
 		'QuestionID',
 		'PagePosition',
+		'Position',
 		'PageID',
 		'PageTitle',
 		'Title'

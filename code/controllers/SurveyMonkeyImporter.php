@@ -101,9 +101,7 @@ HTML;
                 /* IMPORT QUESTIONS */
                 foreach($pagesResponse as $pk) {
 
-                    print_r($pk);
-
-                    foreach($client->getSurveyPageQuestions($si, $pk['id'])->getData()['data'] as $questions){
+                    foreach($client->getSurveyPageQuestions($si, $pk['id'])->getData()['data'] as $questions) {
 
                         $question = new SurveyMonkeySurveyQuestion();
                         $question->QuestionID           = $questions['id'];
@@ -120,6 +118,7 @@ HTML;
 
                         /* IMPORT CHOICES */
                         foreach($client->getSurveyPageQuestion($si, $pk['id'], $questions['id'])->getData() as $q) {
+                            
                             if (is_array($q)) {
 
                                 /* * * CHOICES / COLUMNS * * */
@@ -132,6 +131,7 @@ HTML;
                                         $choice->Position   = $r['position'];
                                         $choice->Text       = $r['text'];
                                         $choice->Visible    = (bool) $r['visible'];
+                                        $choice->IsRow    = true;
                                         $choice->SurveyMonkeySurveyQuestionID = $question->ID;
                                         $choice->write();
 

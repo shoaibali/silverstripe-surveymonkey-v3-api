@@ -10,7 +10,8 @@ class SurveyMonkeySurveyChoice extends DataObject {
         'SurveyID' => 'Varchar',
         'Position' => 'Int',
         'Text' => 'Varchar(255)',
-        'Visible' => 'Boolean'
+        'Visible' => 'Boolean',
+        'IsRow' => 'Boolean',
     );
 
 	private static $field_labels = array(
@@ -19,7 +20,8 @@ class SurveyMonkeySurveyChoice extends DataObject {
 
 	private static $summary_fields = array(
 		'ChoiceID',
-		'Text'
+		'Text',
+		'Position',
 	);
 	
 	private static $has_one = array(
