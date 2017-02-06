@@ -44,10 +44,8 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 	public function getSurveyMonkeySurveyChoice()
 	{
 
-		// TODO I should be able to just get this using the relationship
 		if(!is_null($this->RowID)) {
-			$choice = SurveyMonkeySurveyChoice::get()->filter(array("ChoiceID" => $this->RowID));
-			return $choice->First()->Text;
+			return $this->SurveyMonkeySurveyChoice()->Text;
 		}
 
 		return "";
