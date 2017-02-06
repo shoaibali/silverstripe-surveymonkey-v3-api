@@ -7,6 +7,7 @@ class SurveyMonkeySurveyAdmin extends ModelAdmin {
         'SurveyMonkeySurveyCollector',
         'SurveyMonkeySurveyQuestion',
         'SurveyMonkeySurveyChoice',
+        'SurveyMonkeySurveyResponse',
         'SurveyMonkeySurveyAnswer'
     );
 

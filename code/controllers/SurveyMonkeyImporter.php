@@ -193,8 +193,28 @@ HTML;
 
                         foreach($collectorResponse as $k => $v) {
 
-                            foreach($v['pages'][0]['questions'] as $ck => $cv) {
+                        	// create a response!
+                        	$sresponse = new SurveyMonkeySurveyResponse();
 
+                        	$sresponse->ResponseID 		= $v["id"];
+                        	$sresponse->SurveyID 		= $v["survey_id"];
+                        	$sresponse->CollectorID 	= $v["collector_id"];
+                        	$sresponse->RecipientID 	= $v["recipient_id"];
+                        	$sresponse->IPAddress 		= $v["ip_address"];
+                        	$sresponse->ResponseStatus 	= $v["response_status"];
+                        	$sresponse->TotalTime 		= $v["total_time"];
+
+                        	// for web-link type collectors there is no "contact" metadata available
+                        	$sresponse->EmailAddress 	= (isset($v["metadata"]["contact"]))? $v["metadata"]["contact"]["email"]["value"] : "";
+
+                        	//internal relationships
+                        	$sresponse->SurveyMonkeySurveyID = $survey->ID;
+                        	$sresponse->SurveyMonkeySurveyCollectorID = $collector->ID;
+                        	$sresponse->write();
+
+                        	// TODO  first_name and last_name should also be stored here (if available)
+
+                            foreach($v['pages'][0]['questions'] as $ck => $cv) {
 
                                 foreach($cv['answers'] as $answer) {
 
@@ -216,8 +236,7 @@ HTML;
                                         $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
                                         $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
                                         $sanswer->write();
-
-
+                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
                                     }
 
                                     if (array_key_exists('other_id', $answer)) {
@@ -234,6 +253,7 @@ HTML;
                                         $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
                                         $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
                                         $sanswer->write();
+                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
 
                                     }
 
@@ -251,6 +271,7 @@ HTML;
                                         $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
                                         $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
                                         $sanswer->write();
+                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
 
                                     }
 
@@ -407,7 +428,7 @@ HTML;
          //     // echo $c['data']['id'] . "<br/>";
          // }
 
-         echo "Done";
+         echo "Import Complete!";
 
          die();
     }

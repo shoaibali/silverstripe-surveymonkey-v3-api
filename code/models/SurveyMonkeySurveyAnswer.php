@@ -37,7 +37,8 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 
 	private static $has_one = array(
 		'SurveyMonkeySurveyChoice' => 'SurveyMonkeySurveyChoice',
-		'SurveyMonkeySurveyCollector' => 'SurveyMonkeySurveyCollector'
+		'SurveyMonkeySurveyCollector' => 'SurveyMonkeySurveyCollector',
+		'SurveyMonkeySurveyResponse' => 'SurveyMonkeySurveyResponse'
 	);
 
 	public function getSurveyMonkeySurveyChoice()
@@ -58,7 +59,5 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		$question =  $this->SurveyMonkeySurveyChoice()->SurveyMonkeySurveyQuestion();
 		return $question;
 	}
-
-
 
 }

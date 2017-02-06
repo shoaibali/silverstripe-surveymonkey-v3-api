@@ -25,7 +25,8 @@ class SurveyMonkeySurvey extends DataObject implements PermissionProvider  {
 	);
 
 	private static $has_many = array(
-		'SurveyMonkeySurveyQuestions' => 'SurveyMonkeySurveyQuestion'
+		'SurveyMonkeySurveyQuestions' => 'SurveyMonkeySurveyQuestion',
+		'SurveyMonkeySurveyResponses' => 'SurveyMonkeySurveyResponse'
 	);
 
 
