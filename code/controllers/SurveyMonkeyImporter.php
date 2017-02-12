@@ -84,6 +84,8 @@ HTML;
 
             if (!$existingSurvey || $deleteExisting ) {
 
+                // TODO If the rate limit is reached, we should also halt the app here as well
+
                 // TODO could also get Pages here with second parameter to getSurvey
                 $surveyResponse     = $client->getSurvey($si)->getData();
                 $pagesResponse      = $client->getSurveyPages($si)->getData()['data'];
@@ -97,6 +99,7 @@ HTML;
                 $survey->PageCount = $surveyResponse['page_count'];
                 $survey->ResponsesCount = $surveyResponse['response_count'];
                 $survey->write();
+
 
                 /* IMPORT QUESTIONS */
                 foreach($pagesResponse as $pk) {
@@ -214,22 +217,23 @@ HTML;
 
                         	// TODO  first_name and last_name should also be stored here (if available)
 
-                            foreach($v['pages'][0]['questions'] as $ck => $cv) {
+                            foreach($v['pages'] as $ck => $cv) {
 
-                                foreach($cv['answers'] as $answer) {
+                                foreach($cv['questions'] as $answers => $answer) {
 
                                     $sanswer = new SurveyMonkeySurveyAnswer();
                                     $sanswer->SurveyID = $si;
+                                    $sanswer->AnswerID = $answer['id'];
                                     $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
 
                                     // we are dealing with a row
-                                    if (array_key_exists('row_id', $answer)) {
+                                    if (array_key_exists('row_id', $answer['answers'][0])) {
                                         // $sanswer->ChoiceID = $answer['choice_id'];
-                                        $sanswer->RowID = $answer['row_id'];
+                                        $sanswer->RowID = $answer['answers'][0]['row_id'];
 
                                         $choice = SurveyMonkeySurveyChoice::get()
                                             ->filter(array(
-                                                'ChoiceID' => $answer['row_id'],
+                                                'ChoiceID' => $answer['answers'][0]['row_id'],
                                                 'SurveyID' => $si
                                             ))->First();
 
@@ -239,30 +243,32 @@ HTML;
                                         $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
                                     }
 
-                                    if (array_key_exists('other_id', $answer)) {
+                                    if (isset( $answer['answers'][1] )) {
+                                        if (array_key_exists('other_id', $answer['answers'][1])) {
 
-                                        $sanswer->ChoiceID = $answer['other_id'];
+                                            $sanswer->ChoiceID = $answer['answers'][1]['other_id'];
 
-                                        $choice = SurveyMonkeySurveyChoice::get()
-                                            ->filter(array(
-                                                'ChoiceID' => $answer['other_id'],
-                                                'SurveyID' => $si
-                                            ))->First();
+                                            $choice = SurveyMonkeySurveyChoice::get()
+                                                ->filter(array(
+                                                    'ChoiceID' => $answer['answers'][1]['other_id'],
+                                                    'SurveyID' => $si
+                                                ))->First();
 
-                                        $sanswer->Text = $answer['text'];
-                                        $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
-                                        $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
-                                        $sanswer->write();
-                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
+                                            $sanswer->Text = $answer['answers'][1]['text'];
+                                            $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+                                            $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+                                            $sanswer->write();
+                                            $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
 
+                                        }
                                     }
 
-                                    if (array_key_exists('choice_id', $answer)) {
+                                    if (array_key_exists('choice_id', $answer['answers'][0])) {
 
-                                        $sanswer->ChoiceID = $answer['choice_id'];
+                                        $sanswer->ChoiceID = $answer['answers'][0]['choice_id'];
                                         $choice = SurveyMonkeySurveyChoice::get()
                                             ->filter(array(
-                                                'ChoiceID' => $answer['choice_id'],
+                                                'ChoiceID' => $answer['answers'][0]['choice_id'],
                                                 'SurveyID' => $si
                                             ))->First();
 
@@ -494,6 +500,7 @@ HTML;
             $questions = SurveyMonkeySurveyQuestion::get();
             $choices = SurveyMonkeySurveyChoice::get();
             $answers = SurveyMonkeySurveyAnswer::get();
+            $responses = SurveyMonkeySurveyResponse::get();
 
             foreach($surveys as $s){
                 $s->delete();
@@ -514,6 +521,11 @@ HTML;
             foreach($collectors as $col){
                 $col->delete();
             }
+
+            foreach($responses as $r){
+                $r->delete();
+            }
+
 
             $delete = true;                     
         }

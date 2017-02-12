@@ -6,10 +6,11 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 	static $api_access = false;
 
     private static $db = array(
+    	'AnswerID' => 'Varchar',
     	'SurveyID' => 'Varchar',
         'ChoiceID' => 'Varchar',
         'RowID' => 'Varchar',
-        'Text' => 'Varchar(255)'
+        'Text' => 'Text'
     );
 
 	private static $field_labels = array(
@@ -24,10 +25,7 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		'RowID',
 		'Text',
 		'SurveyMonkeySurveyChoice.Text',
-		'getSurveyMonkeySurveyChoice',
-		'getSurveyMonkeySurveyQuestion.QuestionID',
 		'getSurveyMonkeySurveyQuestion.Title',
-
 	);
 	
 	private static $belongs_to = array(
@@ -40,16 +38,6 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		'SurveyMonkeySurveyCollector' => 'SurveyMonkeySurveyCollector',
 		'SurveyMonkeySurveyResponse' => 'SurveyMonkeySurveyResponse'
 	);
-
-	public function getSurveyMonkeySurveyChoice()
-	{
-
-		if(!is_null($this->RowID)) {
-			return $this->SurveyMonkeySurveyChoice()->Text;
-		}
-
-		return "";
-	}
 
 
 	public function getSurveyMonkeySurveyQuestion()

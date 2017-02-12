@@ -9,7 +9,7 @@ class SurveyMonkeySurveyChoice extends DataObject {
         'ChoiceID' => 'Varchar',
         'SurveyID' => 'Varchar',
         'Position' => 'Int',
-        'Text' => 'Varchar(255)',
+        'Text' => 'Varchar(255)', /* Poor choice of field name */
         'Visible' => 'Boolean',
         'IsRow' => 'Boolean',
     );
