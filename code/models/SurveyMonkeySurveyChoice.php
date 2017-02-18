@@ -19,6 +19,7 @@ class SurveyMonkeySurveyChoice extends DataObject {
 	);
 
 	private static $summary_fields = array(
+		'IsRow',
 		'ChoiceID',
 		'Text',
 		'Position',
