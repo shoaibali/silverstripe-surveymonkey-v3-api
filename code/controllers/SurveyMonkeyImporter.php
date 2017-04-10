@@ -194,6 +194,8 @@ HTML;
 
                         $collectorResponse  = $client->getCollectorResponses($c['id'], true)->getData()['data'];
 
+                        // print_r($client->getCollectorResponses($c['id'], true)->getData());
+
                         foreach($collectorResponse as $k => $v) {
 
                         	// create a response!
@@ -216,70 +218,87 @@ HTML;
                         	$sresponse->write();
 
                         	// TODO  first_name and last_name should also be stored here (if available)
+                            // print_r($v['pages']); die();
 
                             foreach($v['pages'] as $ck => $cv) {
 
                                 foreach($cv['questions'] as $answers => $answer) {
 
-                                    $sanswer = new SurveyMonkeySurveyAnswer();
-                                    $sanswer->SurveyID = $si;
-                                    $sanswer->AnswerID = $answer['id'];
-                                    $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+                                        foreach ($answer['answers'] as $row => $r) {
 
-                                    // we are dealing with a row
-                                    if (array_key_exists('row_id', $answer['answers'][0])) {
-                                        // $sanswer->ChoiceID = $answer['choice_id'];
-                                        $sanswer->RowID = $answer['answers'][0]['row_id'];
-
-                                        $choice = SurveyMonkeySurveyChoice::get()
-                                            ->filter(array(
-                                                'ChoiceID' => $answer['answers'][0]['row_id'],
-                                                'SurveyID' => $si
-                                            ))->First();
-
-                                        $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+                                        $sanswer = new SurveyMonkeySurveyAnswer();
+                                        $sanswer->SurveyID = $si;
+                                        $sanswer->AnswerID = $answer['id'];
                                         $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
-                                        $sanswer->write();
-                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
-                                    }
 
-                                    if (isset( $answer['answers'][1] )) {
-                                        if (array_key_exists('other_id', $answer['answers'][1])) {
 
-                                            $sanswer->ChoiceID = $answer['answers'][1]['other_id'];
-
+                                        if (array_key_exists('choice_id', $r) && !array_key_exists('row_id', $r)) {
+                                            echo "Choice => " . $r['choice_id'] . "<br/>";
+                                            $sanswer->ChoiceID = $r['choice_id'];
                                             $choice = SurveyMonkeySurveyChoice::get()
                                                 ->filter(array(
-                                                    'ChoiceID' => $answer['answers'][1]['other_id'],
+                                                    'ChoiceID' => $r['choice_id'],
                                                     'SurveyID' => $si
                                                 ))->First();
 
-                                            $sanswer->Text = $answer['answers'][1]['text'];
+
+
                                             $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
                                             $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
                                             $sanswer->write();
                                             $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
 
                                         }
+                                        
+                                        if (array_key_exists('row_id', $r) && array_key_exists('choice_id', $r)) {
+                                            echo "Choice => " . $r['choice_id'] . "<br/>";
+
+                                            $sanswer->ChoiceID = $r['choice_id'];
+                                            $sanswer->RowID = $r['row_id'];
+
+                                            $choice = SurveyMonkeySurveyChoice::get()
+                                                ->filter(array(
+                                                    'ChoiceID' => $r['row_id'],
+                                                    'SurveyID' => $si
+                                                ))->First();
+
+
+                                            $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+                                            $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+                                            $sanswer->write();
+                                            $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
+
+
+                                        }
+
+                                        /* Whenever there is an OTHER_ID there is always TEXT */
+                                        if (array_key_exists('row_id', $r) && array_key_exists('other_id', $r)) {
+                                            echo "RowID => " . $r['row_id'] . "<br/>";
+                                            echo "OtherID => " . $r['other_id'] . "<br/>";
+                                            echo "Text => " . $r['text'] . "<br/>";
+
+
+                                            $sanswer->ChoiceID = $r['other_id'];
+
+                                            $choice = SurveyMonkeySurveyChoice::get()
+                                                ->filter(array(
+                                                    'ChoiceID' => $r['other_id'],
+                                                    'SurveyID' => $si
+                                                ))->First();
+
+                                            $sanswer->Text = $r['text'];
+                                            $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
+                                            $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
+                                            $sanswer->write();
+                                            $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
+
+
+                                        }                                            
+
+
+
                                     }
 
-                                    if (array_key_exists('choice_id', $answer['answers'][0])) {
-
-                                        $sanswer->ChoiceID = $answer['answers'][0]['choice_id'];
-                                        $choice = SurveyMonkeySurveyChoice::get()
-                                            ->filter(array(
-                                                'ChoiceID' => $answer['answers'][0]['choice_id'],
-                                                'SurveyID' => $si
-                                            ))->First();
-
-
-
-                                        $sanswer->SurveyMonkeySurveyChoiceID = $choice->ID;
-                                        $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
-                                        $sanswer->write();
-                                        $sresponse->SurveyMonkeySurveyAnswers()->add($sanswer);
-
-                                    }
 
                                 }
                             }
@@ -290,149 +309,6 @@ HTML;
             }
          }
 
-
-         // header('Content-Type: application/json');
-
-         // $surveyID = array_pop($surveysResponse->getData()['data'])['id'];
-
-
-         // echo "Survey ID => ";
-         // print_r($surveyID);
-
-         // echo "<br/>";
-
-         // echo "Title => "; 
-         // print_r(array_pop($surveysResponse->getData()['data'])['title']);
-
-         // echo "<br/>";
-
-         // echo "Questions => <br/>";
-
-         // foreach($client->getSurveyPages($surveyID)->getData()['data'] as $pk) {
-
-         //     foreach($client->getSurveyPageQuestions($surveyID, $pk['id'])->getData()['data'] as $questions){
-            //  // echo "<pre>";
-            //  // print_r($questions);
-            //  // echo "</pre><br/><br/>";
-
-         //         echo  $questions['id'] . "=> " . $questions['heading'] . "<br/>";
-
-         //         foreach ($client->getSurveyPageQuestion($surveyID, $pk['id'], $questions['id'])->getData() as $q) {
-         //             if (is_array($q)) {
-            //          // echo "<pre>";
-            //          // print_r($q);
-            //          // echo "</pre><br/><br/>";
-
-            //          /* * * CHOICES / COLUMNS * * */
-         //                 if (array_key_exists('rows', $q)) {
-         //                     foreach($q['rows'] as $r){
-            //                      echo "ROW:" . $r['id'] . "-->" . $r['text'] . "<br/>";
-         //                     }
-         //                 }
-
-            //          /* * * ROWS * * */
-         //                 if (array_key_exists('choices', $q)) {
-         //                     foreach($q['choices'] as $c){
-            //                      echo "CHOICE:" . $c['id'] . "-->" . $c['text'] . "<br/>";
-         //                     }
-         //                 }
-
-         //                 /* * * OTHER * * */
-         //                 if (array_key_exists('other', $q)) {
-            //                  echo "OTHER: " . $q['other']['id'] . "-->" . $q['other']['text'] . "<br/>";
-         //                 }   
-
-         //             }
-         //         }
-         //     }
-
-         // }
-
-         // echo "<br/>";
-
-
-         // echo "Survey Responses => ";
-         // $answers = $client->getSurveyResponses(array_pop($surveysResponse->getData()['data'])['id']);
-
-         // echo "<br/>";
-
-         // foreach($answers->getData()['data'] as $a) 
-         // {
-         //     echo $a['id'] . "<br/>";
-         // }
-
-         // echo "<br/>";
-
-
-         // $collectors = $client->getCollectorsForSurvey($surveyID);
-         // $collectors = $collectors->getData();
-
-
-         // echo "You have " . count($collectors['data']) . ' collectors' . "<br/>";
-         // echo "Namely " . implode( "," , array_column($collectors['data'], 'name' ))  . " => ID: " . implode( "," , array_column($collectors['data'], 'id' )) . " <br/>";
-
-         // // just to calculate number of responses
-         // foreach($collectors['data'] as $c) {
-         //     $cresponses = $client->getCollectorResponses($c['id'], true)->getData()['data'];
-
-         //     echo "For ". $c['id'] . " => ". $c['name'] . " we have " . count($cresponses)   . " responses <br/>";
-         // }
-
-         // echo "<br/>";
-         // echo "<br/>";
-
-
-         // foreach($collectors['data'] as $c)
-         // {
-
-
-         //     if (is_array($c)) {
-
-         //         $cresponses = $client->getCollectorResponses($c['id'], true);
-        
-
-        //      // echo "<hr><pre>";
-        //      // print_r($cresponses->getData()['data']);
-        //      // echo "</pre><hr>";
-
-        //      // die();
-
-         //         $i = 1;
-         //         foreach($cresponses->getData()['data'] as $k => $v) {
-         //             echo "Choices for your question  no# $i<br/>";
-
-         //             // var_dump($v['pages'][0]['questions']);
-        //          // echo "<hr><pre>";
-        //          // print_r($v);
-        //          // echo "</pre><hr>";
-
-         //             foreach($v['pages'][0]['questions'] as $ck => $cv) {
-         //                 // echo "<hr><pre>";
-         //                 // print_r($cv);
-         //                 // echo "</pre><hr>";
-
-         //                 foreach($cv['answers'] as $answer) {
-            //                  // we are dealing with a row
-            //                  if (array_key_exists('row_id', $answer)) {
-
-            //                      echo "ChoiceID: " . $answer['choice_id'] . "/ RowID: " . $answer['row_id'] . "<br/>";
-            //                  } else {
-            //                      echo "Choice ID: " . $answer['choice_id'] . "<br/>";
-
-            //                  }
-
-         //                 }
-
-
-         //             }
-
-         //             $i++;
-         //         }
-         //     }
-
-         //     // collector ids
-         //     // echo $c['data']['id'] . "<br/>";
-         // }
 
          echo "Import Complete!";
 
