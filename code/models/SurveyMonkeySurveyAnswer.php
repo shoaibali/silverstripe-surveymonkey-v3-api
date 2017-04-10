@@ -17,7 +17,8 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		'ChoiceID' => 'ChoiceID',
 		'RowID' => 'RowID',
 		'Text' => 'Comments',
-		'SurveyMonkeySurveyChoice.Text' =>  'Choice'
+		'getchoicetitle' => 'Answer',
+		'SurveyMonkeySurveyChoice.Text' =>  'Choice',
 	);
 
 	private static $summary_fields = array(
@@ -25,6 +26,7 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		'RowID',
 		'Text',
 		'SurveyMonkeySurveyChoice.Text',
+		'getChoiceTitle',
 		'getSurveyMonkeySurveyQuestion.Title',
 	);
 	
@@ -44,6 +46,17 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 	{
 		$question =  $this->SurveyMonkeySurveyChoice()->SurveyMonkeySurveyQuestion();
 		return $question;
+	}
+
+	public function getChoiceTitle()
+	{
+		$choice = SurveyMonkeySurveyChoice::get()->filter(array('ChoiceID' => $this->ChoiceID));
+
+		if ($choice) {
+			$choice = $choice->First()->Title;
+		}
+
+		return $choice;
 	}
 
 }
