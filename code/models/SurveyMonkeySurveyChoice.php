@@ -15,7 +15,9 @@ class SurveyMonkeySurveyChoice extends DataObject {
     );
 
 	private static $field_labels = array(
-		'Text' => 'Choice'
+		'Text' => 'Choice',
+		'getQuestionPagePosition' => 'Question Page Position',
+		'getPagePosition' => 'Page Position'
 	);
 
 	private static $summary_fields = array(
@@ -23,6 +25,8 @@ class SurveyMonkeySurveyChoice extends DataObject {
 		'ChoiceID',
 		'Text',
 		'Position',
+		'getQuestionPagePosition',
+		'getPagePosition'
 	);
 	
 	private static $has_one = array(
@@ -32,4 +36,15 @@ class SurveyMonkeySurveyChoice extends DataObject {
 	public function getTitle(){
 		return $this->Text;
 	}
+
+	public function getQuestionPagePosition()
+	{		
+		return $this->SurveyMonkeySurveyQuestion()->PagePosition;
+	}
+
+	public function getPagePosition()
+	{		
+		return $this->SurveyMonkeySurveyQuestion()->Position;
+	}
+
 }
