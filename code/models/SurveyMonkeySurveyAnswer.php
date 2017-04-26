@@ -59,4 +59,34 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		return $choice;
 	}
 
+	public function isComment()
+	{
+		$choice = SurveyMonkeySurveyChoice::get()->filter(array('ChoiceID' => $this->ChoiceID));
+
+		 return (stripos($choice->First()->Title, "comments") !== FALSE);
+	}
+
+	public function getComment()
+	{
+		// look for answers with this AnswerID and matching AnswerSection!
+
+		$answers = SurveyMonkeySurveyAnswer::get()->filter(array(
+			'AnswerID' => $this->AnswerID,
+			'SurveyMonkeySurveyResponseID' => $this->SurveyMonkeySurveyResponseID));
+
+		foreach($answers as $answer) {
+			if (($answer->getAnswerSection() == $this->getAnswerSection())) {
+				return $answer->Text;
+			}
+		}
+
+		return "";
+	}
+
+	public function getAnswerSection()
+	{
+		$section = $this->SurveyMonkeySurveyChoice();
+		return ($section->InterviewQuestions()->count())? $section->InterviewQuestions()->First()->QuestionCategory  : "";
+	}
+
 }
