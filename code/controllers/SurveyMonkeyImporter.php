@@ -231,7 +231,6 @@ HTML;
                                         $sanswer->AnswerID = $answer['id'];
                                         $sanswer->SurveyMonkeySurveyCollectorID = $collector->ID;
 
-
                                         if (array_key_exists('choice_id', $r) && !array_key_exists('row_id', $r)) {
                                             echo "Choice => " . $r['choice_id'] . "<br/>";
                                             $sanswer->ChoiceID = $r['choice_id'];
@@ -272,7 +271,7 @@ HTML;
                                         }
 
                                         /* Whenever there is an OTHER_ID there is always TEXT */
-                                        if (array_key_exists('row_id', $r) && array_key_exists('other_id', $r)) {
+                                        if (array_key_exists('other_id', $r)) {
                                             echo "RowID => " . $r['row_id'] . "<br/>";
                                             echo "OtherID => " . $r['other_id'] . "<br/>";
                                             echo "Text => " . $r['text'] . "<br/>";
