@@ -89,4 +89,10 @@ class SurveyMonkeySurveyAnswer extends DataObject {
 		return ($section->InterviewQuestions()->count())? $section->InterviewQuestions()->First()->QuestionCategory  : "";
 	}
 
+	public function getSurveyArea() 
+	{
+		$section = $this->SurveyMonkeySurveyChoice();
+		return ($section->InterviewQuestions()->count())? $section->InterviewQuestions()->First()->SurveyArea  : "";
+	}
+
 }
