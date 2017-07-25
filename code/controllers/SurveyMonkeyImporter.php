@@ -7,7 +7,8 @@ class SurveyMonkeyImporter extends Page_Controller {
     static $allowed_actions = array(
         'Form',
         'import',
-        'complete'
+        'complete',
+        'createEmailCollector'
     );
 
     public function init() {
@@ -47,7 +48,7 @@ HTML;
                 $f = new CheckboxField("SurveyID-". $s->ID, $title);
                 $lf = new LiteralField("SurveyInfo", $info);
 
-                $f->setValue(TRUE);
+                // $f->setValue(TRUE);
 
                 $fields->push($f);
                 $fields->push($lf);
@@ -62,10 +63,91 @@ HTML;
 
         $fields->push($deleteExistingCheckBox);
 
+
+        $lfhr = new LiteralField("CollectorStrat", "<hr/>");
+        $fields->push($lfhr);
+
+        /** ------------------------------------------ **/
+
+        $collectorNameField = new TextField("collectorName", "Collector name");
+        $fields->push($collectorNameField);
+
+        $thankyouMessageField = new TextAreaField("thankyouMessage", "Thank you message");
+        $fields->push($thankyouMessageField);
+
+        $disqualificationMessageField = new TextAreaField("disqualificationMessage", "Disqualification message");
+        $fields->push($disqualificationMessageField);
+
+        $closeDateField = new DatetimeField('closeDate', 'Close date / time');
+        // ISOString format https://www.w3schools.com/jsref/jsref_toisostring.asp
+        $closeDateField->setConfig('datavalueformat', 'YYYY-MM-DDTHH:mm:ss.sssZ'); // global setting
+        $closeDateField->getDateField()->setConfig('showcalendar', 1); // field-specific setting
+
+        $fields->push($closeDateField);
+
+
+        $closedpageMessageField = new TextAreaField("closedpageMessage", "Closed page message");
+        $fields->push($closedpageMessageField);
+
+        $redirectURLField = new TextField("redirectURL", "Redirect URL");
+        $fields->push($redirectURLField);
+
+        $senderEmailField = new EmailField("senderEmail", "Sender email address");
+        $fields->push($senderEmailField);
+
+        /** ------------------------------------------ **/
+
+
+        $lfhr = new LiteralField("CollectorEnd", "<hr/>");
+        $fields->push($lfhr);
+
         //TODO No point in showing submit button if there are no surveys to import or errors
         return new Form($this, "Form", $fields, new FieldList(
-            new FormAction("import", "Begin Import")
+            new FormAction("import", "Begin Import"),
+            new FormAction("createEmailCollector", "Create Email Collecftor")
         ));
+    }
+
+    public function createEmailCollector($data, $form) {
+
+        $surveyIDs = self::getSelectedSurveyIDS($data);
+
+        $config = SiteConfig::current_site_config();
+
+        $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
+
+        foreach($surveyIDs as $si)
+        { 
+            // create collectors for these surveyids.
+            // TODO Maybe check to see if this surveyid already has collectors before creating them?
+            $d = array(
+                'type' => 'email',
+                'name' => isset($data['collectorName'])? $data['collectorName'] : "",
+                'thank_you_message' =>  isset($data['thankyouMessage'])? $data['thankyouMessage'] : "",
+                'disqualification_message' => isset($data['disqualificationMessage'])? $data['disqualificationMessage'] : "",
+                // 'close_date' => isset($data['closeDate'])? $data['closeDate'] : date(DATE_ATOM, mktime(0, 0, 0, 7, 1, 2018)),
+                'close_date' => date(DATE_ATOM, mktime(0, 0, 0, 7, 1, 2018)),
+                'closed_page_message' => isset($data['closedpageMessage'])? $data['closedpageMessage'] : "",
+                // 'redirect_url' => isset($data['redirectURL'])? $data['redirectURL'] : "", // this is only available in platinum account
+                // 'display_survey_results' => isset($data['showResults'])? $data['showResults'] : false,
+                'edit_response_type' => isset($data['editResponseType'])? $data['editResponseType'] : 'until_complete',
+                // 'anonymous_type' => isset($data['anonymousType'])? $data['anonymousType'] : 'not_anonymous',
+                // 'password' =>  isset($data['password'])? $data['password'] : '',
+                'sender_email' =>  isset($data['senderEmail'])? $data['senderEmail'] : '',
+                // 'redirect_type' =>  isset($data['redirectType'])? $data['redirectType'] : 'url',
+            );
+
+            if (array_key_exists("error",  $response = $client->createCollectorForSurvey($si, $d)->getData())) {
+                echo $response['error']['name'] . " => " . $response['error']['message']; 
+            } else {
+                echo "Collector Created";
+            }
+            
+        }
+
+
+         die();
+
     }
 
     public function import($data, $form) {
