@@ -1,3 +1,4 @@
 Director:
   rules:
-    'SurveyMonkeyImporter': 'SurveyMonkeyImporter'
+    'surveymonkey/importer': 'SurveyMonkeyImporter'
+    'surveymonkey/manager': 'SurveyMonkeyManager'

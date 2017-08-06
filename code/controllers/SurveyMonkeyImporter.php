@@ -137,16 +137,87 @@ HTML;
                 // 'redirect_type' =>  isset($data['redirectType'])? $data['redirectType'] : 'url',
             );
 
-            if (array_key_exists("error",  $response = $client->createCollectorForSurvey($si, $d)->getData())) {
-                echo $response['error']['name'] . " => " . $response['error']['message']; 
+            // get collectors
+            $collectors = $client->getCollectorsForSurvey($si)->getData()['data'];
+
+            // if we do no have any collectors then create one.
+            if (count($collectors) == 0) {
+                if (array_key_exists("error",  $collectorResponse = $client->createCollectorForSurvey($si, $d)->getData())) {
+                    echo $collectorResponse['error']['name'] . " => " . $collectorResponse['error']['message']; 
+                } else {
+                    echo "Collector Created";
+
+                    // var_dump($collectorResponse); die();
+
+                    // create message
+                    $messageResponse = $this->createMessage($collectorResponse, $client);
+
+                    echo "Messsage created";
+
+                    // add recipients to message
+                    $recipientResponse = $client->createCollectorMessageRecipient($collectorResponse['id'], $messageResponse['id'], 
+                            array(  'email' => 'shoaib@webstrike.co.nz', 
+                                    'first_name' => 'shoaib',
+                                    'last_name' => 'ali'
+                            )
+                    )->getData();
+
+                    // send message
+                    $s = $client->sendCollectorMessage($collectorResponse['id'], $messageResponse['id']);
+
+                    echo "Messsage sent";
+                }                
             } else {
-                echo "Collector Created";
+                
+                    // // create message
+                    // $messageResponse = $this->createMessage($collectors, $client);
+
+                    // echo "Messsage created";
+
+                    // // add recipients to message
+                    // $m = $client->createCollectorMessageRecipient($collectorResponse['id'], $messageResponse['id'], 
+                    //         array(  'email' => 'shoaib.ali@qedelivery.com', 
+                    //                 'first_name' => 'shoaib',
+                    //                 'last_name' => 'ali'
+                    //         )
+                    // )->getData()['data'];
+
+                    // var_dump($m);
+
+                    // // send message
+                    // $s = $client->sendCollectorMessage()->getData()['data'];
+
+                    // var_dump($s);
+                    // echo "Messsage sent";
+
             }
             
         }
 
 
          die();
+
+    }
+
+    // this can be private
+    public function createMessage($collectors, $client)  {
+
+        // foreach ($collectors as $c) {
+
+            $data = array(
+                // other options are 'reminder', and 'thank_you'
+                'type' => 'invite',
+                // can also send 'recipient_status' if reminder type is set
+                'subject' => 'QEDelivery Survey'
+            );
+            // create a message
+            $messageResponse = $client->createCollectorMessage($collectors['id'], $data)->getData();
+
+        // }
+
+        // var_dump($messageResponse->getData()); die();
+
+        return $messageResponse;
 
     }
 
