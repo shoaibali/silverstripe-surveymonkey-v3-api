@@ -3,7 +3,7 @@
 use Spliced\SurveyMonkey\Client;
 
 
-class SurveyMonkeyImporter extends Page_Controller {
+class SurveyMonkeyImporter extends SurveyMonkeyPage {
     static $allowed_actions = array(
         'Form',
         'import',
@@ -33,12 +33,12 @@ HTML;
          return $msg;
     }
 
-    function Form() {
+    public function Form() {
 
         $fields = new FieldList();
 
-        if (!array_key_exists("error", $surveys = $this->getSurveys())) {
-            foreach($this->getSurveys() as $s) {
+        if (!array_key_exists("error", $surveys = $this->owner->getSurveys())) {
+            foreach($this->owner->getSurveys() as $s) {
                 $title = "<strong>". $s->Title  . "</strong>";
                 $info =  " [<strong>Created</strong>: " . $s->DateCreated . "]" 
                             . " [<strong>Responses</strong>: " . $s->ResponseCount . "]"
@@ -471,37 +471,6 @@ HTML;
         return array(
             "Content" => "<p>All your surveys have been imported.</p>",
             "Form" => " ",
-        );
-    }
-
-    public function getSurveys() {
-        $surveys = new ArrayList();
-
-        $config = SiteConfig::current_site_config();
-
-        $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
-        $surveysResponse = $client->getSurveys()->getData();
-
-        if (!array_key_exists("error", $surveysResponse)) {
-            foreach($surveysResponse['data'] as $r) {
-
-                $survey = $client->getSurvey($r['id'])->getData();
-
-                $surveys->push(Array(
-                                "Title" => $r['title'],
-                                "ID" => $r['id'],
-                                "DateCreated" => $survey['date_created'],
-                                "DateModified" => $survey['date_modified'],
-                                "QuestionsCount" => $survey['question_count'],
-                                "ResponseCount" => $survey['response_count'],
-                ));
-            }
-            return $surveys;
-        } 
-
-        return array(
-            'error' => $surveysResponse['error']['message'], 
-            'name' => $surveysResponse['error']['name']
         );
     }
 
