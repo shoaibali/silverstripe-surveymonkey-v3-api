@@ -4,7 +4,7 @@ use Spliced\SurveyMonkey\Client;
 
 
 class SurveyMonkeyImporter extends SurveyMonkeyPage {
-    static $allowed_actions = array(
+    private static $allowed_actions = array(
         'Form',
         'import',
         'complete',

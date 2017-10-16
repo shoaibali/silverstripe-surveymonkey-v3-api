@@ -50,7 +50,7 @@ class SurveyMonkeyManager extends SurveyMonkeyPage {
         //TODO No point in showing submit button if there are no surveys to import or errors
         return new Form($this, "Form", $fields, new FieldList(
             new FormAction("sendEmail", "Send Email Invitation"),
-            new FormAction("createEmailCollector", "Create Email Collecftor")
+            new FormAction("createEmailCollector", "Create Email Collector")
         ));
     }
 
