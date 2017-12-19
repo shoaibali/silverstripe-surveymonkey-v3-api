@@ -30,29 +30,39 @@ class SurveyMonkeySurvey extends DataObject implements PermissionProvider  {
 	);
 
 
-	function canView($member = false) {
+	public function canView($member = false) {
 		return Permission::check('SURVEY_VIEW');
 	}
 
-	function canEdit($member = false) {
+	public function canEdit($member = false) {
 		return Permission::check('SURVEY_EDIT');
 	}
 
-	function canDelete($member = false) {
+	public function canDelete($member = false) {
 		return Permission::check('SURVEY_DELETE');
 	}
 
-	function canCreate($member = false) {
+	public function canCreate($member = false) {
 		return Permission::check('SURVEY_CREATE');
 	}
 
-	function providePermissions() {
+	public function providePermissions() {
 		return array(
 			'SURVEY_VIEW' => 'Read an survey object',
 			'SURVEY_EDIT' => 'Edit an survey object',
 			'SURVEY_DELETE' => 'Delete an survey object',
 			'SURVEY_CREATE' => 'Create an survey object',
 		);
+	}
+
+	public function getCMSActions() {
+		$actions = parent::getCMSActions();
+		
+		$exportSMCSVaction = new FormAction ('doExportFromSurveyMonkeyCSV', 'Export from SurveyMonkey (CSV)');
+		$exportSMCSVaction->addExtraClass('ss-ui-action-constructive');
+		$actions->push($exportSMCSVaction);
+		
+		return $actions;
 	}
 
 }

@@ -12,6 +12,7 @@
     "license": "GPL-3.0",
     "require": {
         "php": ">=5.5",
+        "symbiote/silverstripe-queuedjobs": "~3.0.1",
         "silverstripe/framework": "~3.2",
         "silverstripe/cms": "~3.2",
         "ghassani/surveymonkey-v3-api-php": "dev-master"
