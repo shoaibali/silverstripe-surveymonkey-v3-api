@@ -163,7 +163,7 @@ class GenerateSurveyMonkeyTokenTask extends BuildTask {
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->SSLVerify);
 				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-				curl_setopt($ch,CURLOPT_POSTFIELDS, $postFields);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
 
 				$response = curl_exec($ch);
 
