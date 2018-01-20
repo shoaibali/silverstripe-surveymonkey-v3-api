@@ -104,99 +104,13 @@ HTML;
         //TODO No point in showing submit button if there are no surveys to import or errors
         return new Form($this, "Form", $fields, new FieldList(
             new FormAction("import", "Begin Import"),
-            new FormAction("createEmailCollector", "Create Email Collecftor")
+            new FormAction("createEmailCollector", "Create Email Collector")
         ));
     }
 
-    public function createEmailCollector($data, $form) {
-
-        $surveyIDs = self::getSelectedSurveyIDS($data);
-
-        $config = SiteConfig::current_site_config();
-
-        $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
-
-        foreach($surveyIDs as $si)
-        { 
-            // create collectors for these surveyids.
-            // TODO Maybe check to see if this surveyid already has collectors before creating them?
-            $d = array(
-                'type' => 'email',
-                'name' => isset($data['collectorName'])? $data['collectorName'] : "",
-                'thank_you_message' =>  isset($data['thankyouMessage'])? $data['thankyouMessage'] : "",
-                'disqualification_message' => isset($data['disqualificationMessage'])? $data['disqualificationMessage'] : "",
-                // 'close_date' => isset($data['closeDate'])? $data['closeDate'] : date(DATE_ATOM, mktime(0, 0, 0, 7, 1, 2018)),
-                'close_date' => date(DATE_ATOM, mktime(0, 0, 0, 7, 1, 2018)),
-                'closed_page_message' => isset($data['closedpageMessage'])? $data['closedpageMessage'] : "",
-                // 'redirect_url' => isset($data['redirectURL'])? $data['redirectURL'] : "", // this is only available in platinum account
-                // 'display_survey_results' => isset($data['showResults'])? $data['showResults'] : false,
-                'edit_response_type' => isset($data['editResponseType'])? $data['editResponseType'] : 'until_complete',
-                // 'anonymous_type' => isset($data['anonymousType'])? $data['anonymousType'] : 'not_anonymous',
-                // 'password' =>  isset($data['password'])? $data['password'] : '',
-                'sender_email' =>  isset($data['senderEmail'])? $data['senderEmail'] : '',
-                // 'redirect_type' =>  isset($data['redirectType'])? $data['redirectType'] : 'url',
-            );
-
-            // get collectors
-            $collectors = $client->getCollectorsForSurvey($si)->getData()['data'];
-
-            // if we do no have any collectors then create one.
-            if (count($collectors) == 0) {
-                if (array_key_exists("error",  $collectorResponse = $client->createCollectorForSurvey($si, $d)->getData())) {
-                    echo $collectorResponse['error']['name'] . " => " . $collectorResponse['error']['message']; 
-                } else {
-                    echo "Collector Created";
-
-                    // var_dump($collectorResponse); die();
-
-                    // create message
-                    $messageResponse = $this->createMessage($collectorResponse, $client);
-
-                    echo "Messsage created";
-
-                    // add recipients to message
-                    $recipientResponse = $client->createCollectorMessageRecipient($collectorResponse['id'], $messageResponse['id'], 
-                            array(  'email' => 'shoaib@webstrike.co.nz', 
-                                    'first_name' => 'shoaib',
-                                    'last_name' => 'ali'
-                            )
-                    )->getData();
-
-                    // send message
-                    $s = $client->sendCollectorMessage($collectorResponse['id'], $messageResponse['id']);
-
-                    echo "Messsage sent";
-                }                
-            } else {
-                
-                    // // create message
-                    // $messageResponse = $this->createMessage($collectors, $client);
-
-                    // echo "Messsage created";
-
-                    // // add recipients to message
-                    // $m = $client->createCollectorMessageRecipient($collectorResponse['id'], $messageResponse['id'], 
-                    //         array(  'email' => 'shoaib.ali@qedelivery.com', 
-                    //                 'first_name' => 'shoaib',
-                    //                 'last_name' => 'ali'
-                    //         )
-                    // )->getData()['data'];
-
-                    // var_dump($m);
-
-                    // // send message
-                    // $s = $client->sendCollectorMessage()->getData()['data'];
-
-                    // var_dump($s);
-                    // echo "Messsage sent";
-
-            }
-            
-        }
-
-
-         die();
-
+    public function Link($action = null)
+    {
+        return Controller::join_links('surveymonkey/importer', $action);
     }
 
     // this can be private
