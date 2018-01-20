@@ -9,7 +9,8 @@ class SurveyMonkeyManager extends SurveyMonkeyPage
     static $allowed_actions = array(
         'Form',
         'createEmailCollector',
-        'createSurveyMonkeySurvey'
+        'createSurveyMonkeySurvey',
+        'deleteSurveyMonkeySurveys'
     );
 
     public function init()
@@ -29,30 +30,39 @@ class SurveyMonkeyManager extends SurveyMonkeyPage
     }
 
 
-    public function Form()
-    {
+
+    public function Form() {
 
         $fields = new FieldList();
+        $surveys = $this->owner->getSurveys();
 
+        if (!array_key_exists("error", $surveys)) {
 
-        if (!array_key_exists("error", $surveys = $this->owner->getSurveys())) {
+            foreach($surveys as $s) {
+                $title = "<strong>". $s->Title  . "</strong>";
+                $info =  " [<strong>Created</strong>: " . $s->DateCreated . "]" 
+                            . " [<strong>Responses</strong>: " . $s->ResponseCount . "]"
+                            . " [<strong>Questions</strong>: " . $s->QuestionsCount . "]"
+                            . " [<strong>Modified</strong>: " . $s->DateModified . "] <br/><br/>";
 
+                $f = new CheckboxField("SurveyID-". $s->ID, $title);
+                $f->setValue(TRUE);
+                $lf = new LiteralField("SurveyInfo", $info);
 
-            $s = array();
+                // $f->setValue(TRUE);
 
-            foreach ($surveys as $sk => $sv) {
-                $s[$sv->ID] = $sv->Title;
+                $fields->push($f);
+                $fields->push($lf);
             }
 
-            $d = DropdownField::create('SuveyMonkeySurveys', 'Survey', $s);
-
-            $d->setEmptyString('(Select survey)');
-
-            $fields->push($d);
+        } else {
+                $lf = new LiteralField("Error", "<br/><br/><strong>" . $surveys['error'] . " : " . $surveys['name'] . "</strong>");
+                $fields->push($lf);
         }
 
         //TODO No point in showing submit button if there are no surveys to import or errors
         return new Form($this, "Form", $fields, new FieldList(
+            new FormAction("deleteSurveyMonkeySurveys", "Delete all or selected surveys"),
             new FormAction("sendEmail", "Send Email Invitation"),
             new FormAction("createEmailCollector", "Create Email Collector"),
             new FormAction("createSurveyMonkeySurvey", "Create Survey")
@@ -79,6 +89,7 @@ class SurveyMonkeyManager extends SurveyMonkeyPage
         $client->createSurvey($data);
         return 'all done';
     }
+
     protected function getSelectedSurveyIDS($data) {
         $ids = array();
 
@@ -89,6 +100,26 @@ class SurveyMonkeyManager extends SurveyMonkeyPage
         }
 
         return $ids;
+    }
+
+    public function deleteSurveyMonkeySurveys($data, $form) 
+    {
+
+        $surveyIDs = self::getSelectedSurveyIDS($data);
+
+
+        $config = SiteConfig::current_site_config();
+
+        $client = new Client($config->SurveyMonkeyAccessToken, $config->SurveryMonkeyAccessCode);
+
+        foreach ($surveyIDs as $si) {
+
+            $client->deleteSurvey($si)->getData();
+
+        }
+
+        echo "Done deleting " . count($surveyIDs)  . " surveys";
+
     }
 
     public function createEmailCollector($data, $form)
