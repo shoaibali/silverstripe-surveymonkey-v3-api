@@ -26,6 +26,8 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 	private $SSLVerify = false;
 
+	private $delay = 15; // delay in seconds used before making request to download export
+
 	private $rememberMe = '&remember_me=on';
 
 	private $cookieFile = "/cookies.txt";
@@ -35,6 +37,8 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 	protected static $loginUrl = "/user/sign-in/"; // <-- Don't remove that trailing forward slash
 
 	protected static $dashUrl = "/dashboard";
+
+	protected static $surveysUrl = "/home";
 
 	protected static $exportUrl = "/analyze/ajax/export/create";
 
@@ -49,28 +53,51 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 	public function run($request) {
 
-		if(!Director::is_cli() && !Director::isDev() && !Permission::check('ADMIN')) { echo "Fail";
+		if(!Director::is_cli() && !Director::isDev() && !Permission::check('ADMIN') && $_SERVER['REMOTE_ADDR'] != $_SERVER['SERVER_ADDR']) { 
+			echo "Fail";
 			return Security::permissionFailure();
-		}
-
-		
-
-		//@TODO also validate the SurveyID to check if its actually a SurveyID in SurveyMonkey before starting this!
-		if (!isset($request['SurveyID'])) {
-			return 'Please provide SurveyMonkey SurveyID as a parameter /dev/tasks/ExportSurveyMonkeySurveyCSVTask/?SurveyID=120710061';
 		}
 
 		$this->config = SiteConfig::current_site_config();
 		$this->SSLVerify = $this->config->SSLVerify;
+		$this->cookieFile = sys_get_temp_dir() . $this->cookieFile;
+
+		// if the config does not have username and password no point in going forward
+		if (empty($this->config->SurveyMonkeyUserName) || empty($this->config->SurveyMonkeyPassword)) {
+			return user_error('Please make sure you have put in your surveymonkey username and password in SiteSetting in /admin/ SurveyMonkey tab', E_USER_WARNING);
+		}
+
+
+		//@TODO also validate the SurveyID to check if its actually a SurveyID in SurveyMonkey before starting this!
+		if (!isset($request['SurveyID'])) {
+
+			$surveysList = $this->getSurveyList();
+
+			if (!empty($surveysList)) {
+
+				echo "<br/>Following is the list of surveys and their IDs that we found within your SurveyMonkey Account<br/><br/>";
+
+				foreach ($surveysList as $slk => $slv) {
+					echo "ID => <strong>" . $slk . "</strong> |  Title: <strong>"  . $slv["Title"]  . "</strong> | Responses: <strong>" . $slv["Responses"] . "</strong>";
+					echo " <a href='". $_SERVER["REQUEST_URI"] . "?SurveyID=". $slk . "'>[Export to CSV]</a><br/>"; 
+				}
+
+				echo "<br/><br/>";
+			}
+
+			return;
+		}
+
 		$this->surveyMonkeySurveyID = $request['SurveyID'];
 		$this->fileName = "SS_" . $request['SurveyID'];
-		$this->cookieFile = sys_get_temp_dir() . $this->cookieFile;
 
 		$this->loginToSurveyMonkey();
 		$exportJobID = $this->createExportJob();
 		$this->downloadExportFile($exportJobID);
 
-		echo "Done saving file to assets";
+		echo "Done saving file to assets, go to /admin area and you should see the CSV zipped under Files section <br/>";
+		echo "Link to download <a href='/assets/" . $this->fileName . ".zip'>" . $this->fileName . ".zip</a> <br/>";
+		echo "RE-RUNNING or refreshing this page with same SurveyID will overwrite the file";
 
 	}
 
@@ -126,11 +153,11 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		// first check if we are already logged in or not
 		if ($this->checkSurveyMonkeyLoginSession()) 
 		{
-			echo 'You are already logged in';
+			echo '<br/>You are already logged in to SurveyMonkey (i.e we found a valid cookie/session stored<br/>';
 			return true;
 		}
 
-		echo "You are not logged in, I am going to log you in";
+		echo "<br/>You are not logged in, I am going to log you in<br/>";
 
 		// @TODO Check if they have a valid username and password entered in SilverStripe settings
 		$username = urlencode($this->config->SurveyMonkeyUserName);
@@ -269,6 +296,10 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		
 		$downloadUrl = self::$websiteUrl . self::$downloadUrl . '?survey_id=' . $this->surveyMonkeySurveyID  . '&export_job_id=' . $exportJobID;
 		
+		// wait for export to get ready?
+		// ideally we want to queue this as a job, but inducing artificial delay will do the trick for now.
+		sleep($this->delay);
+
 		$ch = curl_init($downloadUrl);
 
 		curl_setopt($ch, CURLOPT_HEADER, 1);
@@ -282,11 +313,12 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 		$output = curl_exec($ch);
 
+
 		// this is how you do error handling in curl, not sure if it does SSL verification errors tho?
 		// this also takes care of SSL ceriticate issues
 
 		if(curl_errno($ch)){
-		echo 'error:' . curl_error($ch);
+			echo 'error:' . curl_error($ch);
 		}
 		
 		curl_close($ch);
@@ -297,6 +329,76 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 		return (filesize(realpath(__DIR__ . "../../../../assets/") . "/" . $this->fileName . ".zip") > 0)? true : false;
 
+	}
+
+	/**
+	 * Get list of al the surveys available and their ids
+	 *
+	 */
+	private function getSurveyList() {
+		
+		// we need to login first
+		// the login function is smart, it wont log you in again if you already are! 
+		$this->loginToSurveyMonkey();
+
+		$surveysUrl = self::$websiteUrl . self::$surveysUrl;
+		
+		$ch = curl_init($surveysUrl);
+
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookieFile);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $this->SSLVerify);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->SSLVerify);
+		curl_setopt($ch, CURLOPT_USERAGENT, self::$userAgent);
+
+		$output = curl_exec($ch);
+
+
+		if(curl_errno($ch)){
+			echo 'error:' . curl_error($ch);
+		} else {
+
+			$dom = new DOMDocument();	
+
+			$res = @$dom->loadHTML($output);
+
+			$xpath = new DomXPath($dom);
+			
+			$class = 'survey-row';
+			
+			$surveyhtml = $xpath->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' $class ')]/@id");
+
+			$surveyTitles = $xpath->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' $class ')]//*[contains(@class, 'activity')]//a/@title");
+
+			$surveyResponses = $xpath->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' $class ')]//*[contains(@class, 'responses')]");
+
+			$surveyids = array();
+			$surveyresposnes = array();
+			$surveys = array();
+
+			/* survey ids */
+			foreach ($surveyhtml as $sid) {
+				$surveyids[] = $sid->nodeValue;
+			}
+			/* survey responses */
+			foreach ($surveyResponses as $sr) {
+				$surveyresposnes[] = $sr->nodeValue;
+			}
+
+			foreach ($surveyTitles as $stk => $stv) {
+
+				$surveys[$surveyids[$stk]] = array("Title" => $stv->nodeValue,
+													"Responses" => $surveyresposnes[$stk]
+													);
+			}
+
+		}
+		
+		curl_close($ch);
+
+		return $surveys;
 	}
 
 }
