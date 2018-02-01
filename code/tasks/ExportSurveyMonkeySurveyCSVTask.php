@@ -20,6 +20,8 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 	private $fileName = "";
 
+	private $zipFilePath = ASSETS_PATH;
+
 	private $config = null;
 
 	private $debug = false; // @TODO set it to true on development/test environment
@@ -43,6 +45,8 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 	protected static $exportUrl = "/analyze/ajax/export/create";
 
 	protected static $downloadUrl = "/analyze/export/download/";
+
+	protected static $viewUrl = "/results/ajax/shared_views";
 
 	protected static $userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0";
 
@@ -95,6 +99,7 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		$exportJobID = $this->createExportJob();
 		$this->downloadExportFile($exportJobID);
 
+		// @TODO Add support for checking zip file consistency see checkZipFile method
 		echo "Done saving file to assets, go to /admin area and you should see the CSV zipped under Files section <br/>";
 		echo "Link to download <a href='/assets/" . $this->fileName . ".zip'>" . $this->fileName . ".zip</a> <br/>";
 		echo "RE-RUNNING or refreshing this page with same SurveyID will overwrite the file";
@@ -219,9 +224,10 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		// @TODO I am not sure what view_id is? or where to get it from etc.
 		// @TODO -46800000 timezone offset will break when Day light savings are over
 		// @TODO respondent_count will also need to be established
+		$viewId = $this->getViewID();
 
 		$json = '{	"survey_id":"'. $this->surveyMonkeySurveyID . '",
-					"view_id":"28831697",
+					"view_id": "' . $viewId . '",
 					"exportjob":
 						{	"custom_filename":"'. $this->fileName . '.zip",
 							"format":"excel",
@@ -281,8 +287,15 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 		$jsonResponse = json_decode($response, true);
 
-		// @TODO check to make sure we can access this array with those indexes!
-		$exportJobID = $jsonResponse['data']['export_job']['exportjob_id'];
+		$exportJobID = 0;	
+		
+		if (isset($jsonResponse['data'])) {
+			$exportJobID = $jsonResponse['data']['export_job']['exportjob_id'];
+		}
+
+		if ($exportJobID == 0) {
+			die('Sorry, cannot work out export_job_id');
+		}
 		
 		return $exportJobID; // this ID is used to download the file
 	}
@@ -323,11 +336,16 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		
 		curl_close($ch);
 
-		// @TODO Add configuration to save it to NFS or whever we can pick it up from later and add permissions etc
+		// @TODO Add configuration to save it to NFS or whever we can pick it up from later and add permissions etc\
+		$assetsPath = realpath(__DIR__ . "../../../../assets/");
+		
+		if (defined(ASSETS_PATH)) {
+			$assetsPath = ASSETS_PATH;
+		}
 
-		file_put_contents( realpath(__DIR__ . "../../../../assets/") . "/" . $this->fileName . ".zip", $output);
+		file_put_contents( $assetsPath . "/" . $this->fileName . ".zip", $output);
 
-		return (filesize(realpath(__DIR__ . "../../../../assets/") . "/" . $this->fileName . ".zip") > 0)? true : false;
+		return (filesize($assetsPath . "/" . $this->fileName . ".zip") > 0)? true : false;
 
 	}
 
@@ -401,4 +419,77 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		return $surveys;
 	}
 
+	/**
+	 * Finds the viewId and returns it for export survey
+	 *
+	 */
+	private function getViewID() {
+
+		$viewUrl = self::$websiteUrl . self::$viewUrl . "?survey_id=" . $this->surveyMonkeySurveyID;
+		
+		$ch = curl_init($viewUrl);
+
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookieFile);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $this->SSLVerify);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->SSLVerify);
+		curl_setopt($ch, CURLOPT_USERAGENT, self::$userAgent);
+
+		$response = curl_exec($ch);
+
+		if(curl_errno($ch)){
+			echo 'error:' . curl_error($ch);
+		}
+
+		$jsonResponse = json_decode($response, true);
+
+		$viewId = 0;
+
+		if (isset($jsonResponse['data'])) {
+			// down the rabbit hole, if there is a better way to get view please feel free to let me know
+			$sharedViews = array_pop($jsonResponse['data']['shared_views']);
+			$viewSchema = json_decode($sharedViews['sharable_view']['view_schema'], true);
+			$viewId = $viewSchema['selected_view_id'];
+
+		}
+		if ($viewId == 0) {
+			die('Sorry, could not work out what viewId to use');
+		}
+
+		return $viewId;
+	}
+
+	/**
+	 * Checks if ZIP file was not corrupted
+	 * 
+	 */	
+	private function checkZipFile($zipFile) {
+
+		$zip = new ZipArchive();
+		
+		$res = $zip->open($zipFile, ZipArchive::CHECKCONS);
+
+		var_dump($zipFile);
+		var_dump($res);
+		
+		if ($res !== TRUE) {
+		
+			switch($res) {
+				case ZipArchive::ER_NOZIP:
+					die('not a zip file');
+				case ZipArchive::ER_INCONS :
+					die('zip file consistency check failed');
+				case ZipArchive::ER_CRC :
+					die('zip file checksum failed');
+				case 11 :
+					die('cannot open zip file');
+				default:
+					die('zip file error ' . $res);
+			}
+		}
+
+		return $res;
+	}
 }
