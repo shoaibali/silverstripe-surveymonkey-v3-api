@@ -339,7 +339,7 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		// @TODO Add configuration to save it to NFS or whever we can pick it up from later and add permissions etc\
 		$assetsPath = realpath(__DIR__ . "../../../../assets/");
 		
-		if (defined(ASSETS_PATH)) {
+		if (defined('ASSETS_PATH')) {
 			$assetsPath = ASSETS_PATH;
 		}
 
