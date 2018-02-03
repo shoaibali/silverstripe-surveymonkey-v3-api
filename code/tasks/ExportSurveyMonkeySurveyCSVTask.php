@@ -102,6 +102,10 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		// @TODO Add support for checking zip file consistency see checkZipFile method
 		echo "Done saving file to assets, go to /admin area and you should see the CSV zipped under Files section <br/>";
 		echo "Link to download <a href='/assets/" . $this->fileName . ".zip'>" . $this->fileName . ".zip</a> <br/>";
+		echo "Extracting zip file now ";
+
+		$this->extractZipFile(ASSETS_PATH . "/" . $this->fileName . ".zip");
+
 		echo "RE-RUNNING or refreshing this page with same SurveyID will overwrite the file";
 
 	}
@@ -315,7 +319,7 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 
 		$ch = curl_init($downloadUrl);
 
-		curl_setopt($ch, CURLOPT_HEADER, 1);
+		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookieFile);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
@@ -454,6 +458,7 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 			$viewId = $viewSchema['selected_view_id'];
 
 		}
+
 		if ($viewId == 0) {
 			die('Sorry, could not work out what viewId to use');
 		}
@@ -471,9 +476,6 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		
 		$res = $zip->open($zipFile, ZipArchive::CHECKCONS);
 
-		var_dump($zipFile);
-		var_dump($res);
-		
 		if ($res !== TRUE) {
 		
 			switch($res) {
@@ -491,5 +493,23 @@ class ExportSurveyMonkeySurveyCSVTask extends BuildTask {
 		}
 
 		return $res;
+	}
+
+	private function extractZipFile($zipFile) {
+		
+		$zip = new ZipArchive;
+
+		$res = $zip->open($zipFile);
+
+		if ($res === TRUE) {
+			
+		  $zip->extractTo(ASSETS_PATH);
+		  $zip->close();
+
+		  echo 'woot! done extracting file to ' . ASSETS_PATH . "<br/>";
+		} else {
+		  die('doh! could not extract zip file - good luck figuring that out');
+		}
+
 	}
 }
